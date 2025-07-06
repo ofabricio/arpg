@@ -1,8 +1,9 @@
 package arpg
 
 import (
-	rl "github.com/gen2brain/raylib-go/raylib"
+	"reflect"
 
+	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/ofabricio/arpg/sprite"
 )
 
@@ -21,6 +22,8 @@ func NewHero() Hero {
 	h.stateAttack = &HeroAttack{}
 	h.stateDefend = &HeroGuard{}
 	h.state = h.stateIdle
+	h.position.X = 100
+	h.position.Y = 100
 	return h
 }
 
@@ -65,11 +68,23 @@ func (h *Hero) Draw() {
 	p.X -= h.animationOffset.X
 	p.Y -= h.animationOffset.Y
 	h.animation.Draw(p)
+
+	if DebugEnabled {
+		rl.DrawText(reflect.TypeOf(h.state).Elem().Name(), int32(h.position.X), int32(h.position.Y)-100, 20, rl.DarkGray)
+	}
+}
+
+func (h *Hero) ZIndex() float32 {
+	return h.position.Y
+}
+
+func (h *Hero) Position() rl.Vector2 {
+	return h.position
 }
 
 func (h *Hero) wantToMove() bool {
 	t := rl.GetMousePosition()
-	return rl.IsMouseButtonDown(rl.MouseButtonLeft) && rl.Vector2Distance(h.position, t) > 15
+	return rl.IsMouseButtonDown(rl.MouseButtonLeft) && rl.Vector2Distance(h.position, t) >= 15
 }
 
 func (h *Hero) wantToAttack() bool {
@@ -110,6 +125,18 @@ func (s *HeroMove) Update(h *Hero, dt float32) HeroState {
 
 	h.animation = &h.animationMove
 
+	if h.wantToAttack() {
+		// Stop moving.
+		h.target = h.position
+		return h.stateAttack
+	}
+
+	if h.wantToDefend() {
+		// Stop moving.
+		h.target = h.position
+		return h.stateDefend
+	}
+
 	if h.wantToMove() {
 		// Set the new target.
 		h.target = rl.GetMousePosition()
@@ -121,20 +148,9 @@ func (s *HeroMove) Update(h *Hero, dt float32) HeroState {
 
 	// Reached the target? Idle.
 	if rl.Vector2Distance(h.position, h.target) <= h.Speed*dt {
+		// Snap.
 		h.position = h.target
 		return h.stateIdle
-	}
-
-	if h.wantToAttack() {
-		// Stop moving.
-		h.target = h.position
-		return h.stateAttack
-	}
-
-	if h.wantToDefend() {
-		// Stop moving.
-		h.target = h.position
-		return h.stateDefend
 	}
 
 	return s
@@ -152,8 +168,8 @@ func (s *HeroAttack) Update(h *Hero, dt float32) HeroState {
 	}
 	if h.animation.Complete() {
 		s.toggle = !s.toggle
-		h.lookAtMouse()
 		if h.wantToAttack() {
+			h.lookAtMouse()
 			return s
 		}
 		return h.stateIdle
