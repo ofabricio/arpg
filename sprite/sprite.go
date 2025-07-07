@@ -26,15 +26,15 @@ type Sheet struct {
 	Frames    []rl.Rectangle
 	Speed     float32
 	Flip      bool
+	Completed bool
 	frameTime float32
 	frame     int
-	complete  bool
 }
 
 func (s *Sheet) Update(dt float32) {
 	s.frameTime += dt * s.Speed
 	frame := int(s.frameTime) % len(s.Frames)
-	s.complete = frame < s.frame
+	s.Completed = frame < s.frame
 	s.frame = frame
 }
 
@@ -44,8 +44,4 @@ func (s *Sheet) Draw(p rl.Vector2) {
 		f.Width = -f.Width
 	}
 	rl.DrawTextureRec(s.Texture, f, p, rl.White)
-}
-
-func (s *Sheet) Complete() bool {
-	return s.complete
 }

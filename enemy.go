@@ -16,7 +16,6 @@ func NewEnemy() Enemy {
 	e.animationAttack2 = sprite.NewSheet(rl.LoadTexture("assets/warrior_attack2.png"), 10, 192, 0, 0, 0, 3)
 	e.animation = &e.animationIdle
 	e.animationOffset = rl.Vector2{X: 96, Y: 96 + 33} // Half of the sprite size (192x192).
-	e.Speed = 90
 	e.stateIdle = &EnemyIdle{}
 	e.stateChase = &EnemyChase{}
 	e.state = e.stateIdle
@@ -25,6 +24,7 @@ func NewEnemy() Enemy {
 	e.attackDistance = 192 / 4
 	e.minChaseDistance = e.attackDistance * 1.35
 	e.awarenessDistance = e.attackDistance * 7
+	e.Speed = 80
 	return e
 }
 
@@ -53,8 +53,9 @@ type Enemy struct {
 func (e *Enemy) Update(dt float32) {
 
 	next := e.state.Update(e, dt)
-	e.state = next
-	e.state.Update(e, dt)
+	if next != nil {
+		e.state = next
+	}
 
 	e.animation.Flip = rl.Vector2Subtract(e.Hero.Position(), e.position).X < 0
 	e.animation.Update(dt)
@@ -99,23 +100,21 @@ type EnemyState interface {
 	Update(*Enemy, float32) EnemyState
 }
 
-type EnemyIdle struct {
-	reasoning Timer
-}
+type EnemyIdle struct{}
 
 func (s *EnemyIdle) Update(e *Enemy, dt float32) EnemyState {
 
 	e.animation = &e.animationIdle
 
 	if e.inAttackRange() {
-		return s
+		return nil
 	}
 
 	if e.inChaseRange() {
 		return e.stateChase
 	}
 
-	return s
+	return nil
 }
 
 type EnemyChase struct{}
@@ -130,5 +129,5 @@ func (s *EnemyChase) Update(e *Enemy, dt float32) EnemyState {
 
 	e.position = rl.Vector2MoveTowards(e.position, e.Hero.Position(), e.Speed*dt)
 
-	return s
+	return nil
 }

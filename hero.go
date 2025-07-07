@@ -16,7 +16,6 @@ func NewHero() Hero {
 	h.animationAttack2 = sprite.NewSheet(rl.LoadTexture("assets/warrior_attack2.png"), 10, 192, 0, 0, 0, 3)
 	h.animation = &h.animationIdle
 	h.animationOffset = rl.Vector2{X: 96, Y: 96 + 33} // Half of the sprite size (192x192).
-	h.Speed = 100
 	h.stateIdle = &HeroIdle{}
 	h.stateMove = &HeroMove{}
 	h.stateAttack = &HeroAttack{}
@@ -24,6 +23,8 @@ func NewHero() Hero {
 	h.state = h.stateIdle
 	h.position.X = 100
 	h.position.Y = 100
+	h.attackDistance = 70
+	h.Speed = 100
 	return h
 }
 
@@ -47,6 +48,8 @@ type Hero struct {
 	position rl.Vector2
 	target   rl.Vector2
 
+	attackDistance float32
+
 	dirMovmt rl.Vector2 // Movement direction.
 	dirMouse rl.Vector2 // Mouse direction.
 }
@@ -56,8 +59,12 @@ func (h *Hero) Update(dt float32) {
 	h.dirMouse = rl.Vector2Normalize(rl.Vector2Subtract(rl.GetMousePosition(), h.position))
 
 	next := h.state.Update(h, dt)
-	h.state = next
-	h.state.Update(h, dt)
+	if next != nil {
+		if v, ok := next.(interface{ Enter(*Hero) }); ok {
+			v.Enter(h)
+		}
+		h.state = next
+	}
 
 	h.animation.Flip = h.dirMovmt.X < 0
 	h.animation.Update(dt)
@@ -70,6 +77,7 @@ func (h *Hero) Draw() {
 	h.animation.Draw(p)
 
 	if DebugEnabled {
+		rl.DrawCircleLines(int32(h.position.X), int32(h.position.Y), h.attackDistance, rl.Red)
 		rl.DrawText(reflect.TypeOf(h.state).Elem().Name(), int32(h.position.X), int32(h.position.Y)-100, 20, rl.DarkGray)
 	}
 }
@@ -99,6 +107,15 @@ func (h *Hero) lookAtMouse() {
 	h.dirMovmt = h.dirMouse
 }
 
+func (h *Hero) stopMoving() {
+	h.target = h.position
+}
+
+func (h *Hero) setTarget() {
+	h.target = rl.GetMousePosition()
+	h.dirMovmt = rl.Vector2Subtract(h.target, h.position)
+}
+
 type HeroState interface {
 	Update(*Hero, float32) HeroState
 }
@@ -116,7 +133,7 @@ func (s *HeroIdle) Update(h *Hero, dt float32) HeroState {
 	if h.wantToDefend() {
 		return h.stateDefend
 	}
-	return s
+	return nil
 }
 
 type HeroMove struct{}
@@ -126,66 +143,62 @@ func (s *HeroMove) Update(h *Hero, dt float32) HeroState {
 	h.animation = &h.animationMove
 
 	if h.wantToAttack() {
-		// Stop moving.
-		h.target = h.position
 		return h.stateAttack
 	}
 
 	if h.wantToDefend() {
-		// Stop moving.
-		h.target = h.position
 		return h.stateDefend
 	}
 
 	if h.wantToMove() {
-		// Set the new target.
-		h.target = rl.GetMousePosition()
-		h.dirMovmt = rl.Vector2Subtract(h.target, h.position)
+		h.setTarget()
 	}
 
 	// Move to target.
 	h.position = rl.Vector2MoveTowards(h.position, h.target, h.Speed*dt)
 
-	// Reached the target? Idle.
+	// Reached the target?
 	if rl.Vector2Distance(h.position, h.target) <= h.Speed*dt {
 		// Snap.
 		h.position = h.target
 		return h.stateIdle
 	}
 
-	return s
+	return nil
 }
 
-type HeroAttack struct {
-	toggle bool
+type HeroAttack struct{}
+
+func (s *HeroAttack) Enter(h *Hero) {
+	if h.animation == &h.animationAttack2 {
+		h.animation = &h.animationAttack1
+	} else {
+		h.animation = &h.animationAttack2
+	}
+	h.stopMoving()
+	h.lookAtMouse()
 }
 
 func (s *HeroAttack) Update(h *Hero, dt float32) HeroState {
-	if s.toggle {
-		h.animation = &h.animationAttack2
-	} else {
-		h.animation = &h.animationAttack1
-	}
-	if h.animation.Complete() {
-		s.toggle = !s.toggle
+	if h.animation.Completed {
 		if h.wantToAttack() {
-			h.lookAtMouse()
 			return s
 		}
 		return h.stateIdle
 	}
-	return s
+	return nil
 }
 
 type HeroGuard struct{}
 
 func (s *HeroGuard) Update(h *Hero, dt float32) HeroState {
+
 	h.animation = &h.animationGuard
+	h.stopMoving()
+	h.lookAtMouse()
+
 	if h.wantToDefend() {
-		if h.animation.Complete() {
-			h.lookAtMouse()
-		}
-		return s
+		return nil
 	}
 	if h.wantToMove() {
 		return h.stateMove
@@ -193,5 +206,6 @@ func (s *HeroGuard) Update(h *Hero, dt float32) HeroState {
 	if h.wantToAttack() {
 		return h.stateAttack
 	}
-	return s
+
+	return nil
 }
