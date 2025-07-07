@@ -8,6 +8,7 @@ func NewSheet(t rl.Texture2D, speed, spriteSize float32, row1, col1, row2, col2 
 	var s Sheet
 	s.Texture = t
 	s.Speed = speed
+	s.Tint = rl.White
 	for c := col1; c <= col2; c++ {
 		for r := row1; r <= row2; r++ {
 			s.Frames = append(s.Frames, rl.Rectangle{
@@ -27,6 +28,7 @@ type Sheet struct {
 	Speed     float32
 	Flip      bool
 	Completed bool
+	Tint      rl.Color
 	frameTime float32
 	frame     int
 }
@@ -43,5 +45,5 @@ func (s *Sheet) Draw(p rl.Vector2) {
 	if s.Flip {
 		f.Width = -f.Width
 	}
-	rl.DrawTextureRec(s.Texture, f, p, rl.White)
+	rl.DrawTextureRec(s.Texture, f, p, s.Tint)
 }

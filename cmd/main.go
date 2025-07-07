@@ -13,6 +13,7 @@ func main() {
 	var game arpg.Game
 
 	hero := arpg.NewHero()
+	hero.G = &game
 
 	enemy := arpg.NewEnemy()
 	enemy.Hero = &hero

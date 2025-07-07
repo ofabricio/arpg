@@ -43,6 +43,8 @@ type Hero struct {
 	stateAttack HeroState
 	stateDefend HeroState
 
+	G *Game
+
 	Speed float32
 
 	position rl.Vector2
@@ -52,6 +54,16 @@ type Hero struct {
 
 	dirMovmt rl.Vector2 // Movement direction.
 	dirMouse rl.Vector2 // Mouse direction.
+}
+
+func (h *Hero) attack() {
+	for _, entity := range h.G.FindInside(h.position, h.attackDistance) {
+		if entity != h {
+			if e, ok := entity.(interface{ Hurt() }); ok {
+				e.Hurt()
+			}
+		}
+	}
 }
 
 func (h *Hero) Update(dt float32) {
@@ -80,10 +92,6 @@ func (h *Hero) Draw() {
 		rl.DrawCircleLines(int32(h.position.X), int32(h.position.Y), h.attackDistance, rl.Red)
 		rl.DrawText(reflect.TypeOf(h.state).Elem().Name(), int32(h.position.X), int32(h.position.Y)-100, 20, rl.DarkGray)
 	}
-}
-
-func (h *Hero) ZIndex() float32 {
-	return h.position.Y
 }
 
 func (h *Hero) Position() rl.Vector2 {
@@ -170,17 +178,19 @@ func (s *HeroMove) Update(h *Hero, dt float32) HeroState {
 type HeroAttack struct{}
 
 func (s *HeroAttack) Enter(h *Hero) {
+	h.stopMoving()
+	h.lookAtMouse()
+
 	if h.animation == &h.animationAttack2 {
 		h.animation = &h.animationAttack1
 	} else {
 		h.animation = &h.animationAttack2
 	}
-	h.stopMoving()
-	h.lookAtMouse()
 }
 
 func (s *HeroAttack) Update(h *Hero, dt float32) HeroState {
 	if h.animation.Completed {
+		h.attack()
 		if h.wantToAttack() {
 			return s
 		}

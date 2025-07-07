@@ -48,6 +48,8 @@ type Enemy struct {
 	attackDistance    float32 // Distance the enemy can attack the hero.
 	minChaseDistance  float32 // Minimum distance to start chasing the hero.
 	awarenessDistance float32 // Distance the enemy can see the hero.
+
+	hurtTimer Timer
 }
 
 func (e *Enemy) Update(dt float32) {
@@ -59,6 +61,9 @@ func (e *Enemy) Update(dt float32) {
 
 	e.animation.Flip = rl.Vector2Subtract(e.Hero.Position(), e.position).X < 0
 	e.animation.Update(dt)
+
+	e.animation.Tint = rl.ColorLerp(rl.White, rl.Red, PingPong(e.hurtTimer.Elapsed*8))
+	e.hurtTimer.Update(dt)
 }
 
 func (e *Enemy) Draw() {
@@ -75,12 +80,12 @@ func (e *Enemy) Draw() {
 	}
 }
 
-func (e *Enemy) ZIndex() float32 {
-	return e.position.Y
-}
-
 func (e *Enemy) Position() rl.Vector2 {
 	return e.position
+}
+
+func (e *Enemy) Hurt() {
+	e.hurtTimer.Play(1.0 / 8)
 }
 
 func (e *Enemy) inAwarenessRange() bool {
