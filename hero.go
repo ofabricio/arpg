@@ -21,8 +21,8 @@ func NewHero() Hero {
 	h.stateAttack = &HeroAttack{}
 	h.stateDefend = &HeroGuard{}
 	h.state = h.stateIdle
-	h.position.X = 100
-	h.position.Y = 100
+	h.position.X = 1280 / 2
+	h.position.Y = 720 / 2
 	h.attackDistance = 70
 	h.Speed = 100
 	return h
@@ -54,16 +54,18 @@ type Hero struct {
 
 	dirMovmt rl.Vector2 // Movement direction.
 	dirMouse rl.Vector2 // Mouse direction.
+
+	hurtAnimation HurtAnimation
 }
 
 func (h *Hero) attack() {
-	for _, entity := range h.G.FindInside(h.position, h.attackDistance) {
+	h.G.FindInside(h.position, h.attackDistance, func(entity GameObj) {
 		if entity != h {
-			if e, ok := entity.(interface{ Hurt() }); ok {
+			if e, ok := entity.(Hurter); ok {
 				e.Hurt()
 			}
 		}
-	}
+	})
 }
 
 func (h *Hero) Update(dt float32) {
@@ -80,6 +82,9 @@ func (h *Hero) Update(dt float32) {
 
 	h.animation.Flip = h.dirMovmt.X < 0
 	h.animation.Update(dt)
+
+	h.animation.Tint = h.hurtAnimation.Value()
+	h.hurtAnimation.Update(dt)
 }
 
 func (h *Hero) Draw() {
@@ -96,6 +101,10 @@ func (h *Hero) Draw() {
 
 func (h *Hero) Position() rl.Vector2 {
 	return h.position
+}
+
+func (e *Hero) Hurt() {
+	e.hurtAnimation.Play()
 }
 
 func (h *Hero) wantToMove() bool {

@@ -12,14 +12,12 @@ type Game struct {
 	Entities []GameObj
 }
 
-func (g *Game) FindInside(position rl.Vector2, distance float32) []GameObj {
-	var found []GameObj
+func (g *Game) FindInside(position rl.Vector2, distance float32, f func(GameObj)) {
 	for _, entity := range g.Entities {
 		if rl.Vector2Distance(position, entity.Position()) <= distance {
-			found = append(found, entity)
+			f(entity)
 		}
 	}
-	return found
 }
 
 func (g *Game) Update(dt float32) {
@@ -39,6 +37,10 @@ type GameObj interface {
 	Update(float32)
 	Draw()
 	Position() rl.Vector2
+}
+
+type Hurter interface {
+	Hurt()
 }
 
 type Timer struct {

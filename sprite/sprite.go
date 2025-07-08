@@ -47,3 +47,7 @@ func (s *Sheet) Draw(p rl.Vector2) {
 	}
 	rl.DrawTextureRec(s.Texture, f, p, s.Tint)
 }
+
+func (s *Sheet) Reset() {
+	s.frameTime = 0
+}

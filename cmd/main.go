@@ -15,10 +15,22 @@ func main() {
 	hero := arpg.NewHero()
 	hero.G = &game
 
-	enemy := arpg.NewEnemy()
-	enemy.Hero = &hero
+	enemy1 := arpg.NewEnemy(1280-1280/4, 720/2)
+	enemy1.Hero = &hero
+	enemy1.AttackSpeed = 1.0
 
-	game.Entities = append(game.Entities, &hero, &enemy)
+	// enemy2 := arpg.NewEnemy(1280/4, 720/2)
+	// enemy2.Hero = &hero
+	// enemy2.AttackSpeed = 2.0
+
+	game.Entities = append(game.Entities, &hero, &enemy1) //, &enemy2)
+
+	// for range 100 {
+	// 	enemy := arpg.NewEnemy(float32(rand.Intn(1280)), float32(rand.Intn(720)))
+	// 	enemy.Hero = &hero
+	// 	enemy.AttackSpeed = 1.0
+	// 	game.Entities = append(game.Entities, &enemy)
+	// }
 
 	rl.SetExitKey(rl.KeyEscape)
 	rl.SetTargetFPS(60)
