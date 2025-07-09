@@ -1,6 +1,8 @@
 package main
 
 import (
+	"math/rand"
+
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/ofabricio/arpg"
 )
@@ -25,12 +27,12 @@ func main() {
 
 	game.Entities = append(game.Entities, &hero, &enemy1) //, &enemy2)
 
-	// for range 100 {
-	// 	enemy := arpg.NewEnemy(float32(rand.Intn(1280)), float32(rand.Intn(720)))
-	// 	enemy.Hero = &hero
-	// 	enemy.AttackSpeed = 1.0
-	// 	game.Entities = append(game.Entities, &enemy)
-	// }
+	for range 10 {
+		enemy := arpg.NewEnemy(float32(rand.Intn(1280)), float32(rand.Intn(720)))
+		enemy.Hero = &hero
+		enemy.AttackSpeed = 1.0
+		game.Entities = append(game.Entities, &enemy)
+	}
 
 	rl.SetExitKey(rl.KeyEscape)
 	rl.SetTargetFPS(60)

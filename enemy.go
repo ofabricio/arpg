@@ -47,6 +47,7 @@ type Enemy struct {
 	Speed float32
 
 	position       rl.Vector2
+	velocity       rl.Vector2
 	AttackSpeed    float32
 	AttackDistance float32
 	ChaseDistance  float32
@@ -121,15 +122,44 @@ func (s *EnemyIdle) Update(e *Enemy, dt float32) EnemyState {
 	return nil
 }
 
-type EnemyChase struct{}
+type EnemyChase struct {
+	vel rl.Vector2
+}
+
+func (s *EnemyChase) Enter(e *Enemy) {}
 
 func (s *EnemyChase) Update(e *Enemy, dt float32) EnemyState {
 
 	if e.inAttackRange() {
-		return e.stateIdle
+		return e.stateAttack
+	}
+	var maxSpeed float32 = e.Speed * dt
+	var maxForce float32 = e.Speed * dt
+
+	p := e.Hero.position
+
+	seek := rl.Vector2Scale(rl.Vector2Normalize(rl.Vector2Subtract(p, e.position)), maxSpeed)
+
+	steering := rl.Vector2Zero()
+	steering = rl.Vector2Add(steering, seek)
+
+	for _, entity := range e.Hero.G.Entities {
+		if entity != e && rl.Vector2Distance(e.position, entity.Position()) <= 50 {
+			fleeDir := rl.Vector2Rotate(rl.Vector2Subtract(entity.Position(), e.position), 90)
+			flee := rl.Vector2Scale(rl.Vector2Normalize(fleeDir), maxForce)
+			steering = rl.Vector2Add(steering, flee)
+		}
 	}
 
-	e.position = rl.Vector2MoveTowards(e.position, e.Hero.Position(), e.Speed*dt)
+	steering = rl.Vector2ClampValue(steering, 0, maxForce)
+	s.vel = rl.Vector2ClampValue(rl.Vector2Add(steering, s.vel), 0, maxSpeed)
+	if e.inAttackRange() {
+		s.vel = rl.Vector2Zero()
+	}
+
+	e.position = rl.Vector2Add(e.position, s.vel)
+
+	// e.position = rl.Vector2MoveTowards(e.position, e.Hero.Position(), e.Speed*dt)
 	e.animation = &e.animationMove
 
 	return nil
